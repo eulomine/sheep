@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>할렐루야 박자왕 - 이리신광교회 에디션</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Jua&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #0a0014;
+            color: white;
+            font-family: 'Jua', 'Malgun Gothic', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(180deg, #0a0014 0%, #1a0033 50%, #0d0020 100%);
+            overflow: hidden;
+        }
+
+        .bg-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatUp linear infinite;
+            opacity: 0.3;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+        }
+
+        #info {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 15px;
+        }
+        #score-text {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 1.5rem;
+            color: #fff;
+            text-shadow: 0 0 10px #00d2ff, 0 0 20px #00d2ff;
+        }
+        #combo-container {
+            text-align: center;
+            transition: transform 0.1s;
+        }
+        #combo-container.bump { transform: scale(1.3); }
+        #combo-count {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 2.5rem;
+            color: #ffdd00;
+            text-shadow: 0 0 15px #ffaa00, 0 0 30px #ff6600;
+            line-height: 1;
+        }
+        #combo-label {
+            font-size: 0.8rem;
+            color: #ffaa00;
+            letter-spacing: 3px;
+        }
+        #song-title-display {
+            font-size: 0.9rem;
+            color: #aaa;
+            text-align: right;
+        }
+
+        .lane {
+            position: absolute;
+            bottom: 0;
+            width: 25%;
+            height: 100%;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            transition: background 0.08s;
+            z-index: 2;
+        }
+        .lane::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+        }
+        #lane-0::before { background: linear-gradient(to top, #ff3366, transparent 60%); }
+        #lane-1::before { background: linear-gradient(to top, #33ff66, transparent 60%); }
+        #lane-2::before { background: linear-gradient(to top, #3366ff, transparent 60%); }
+        #lane-3::before { background: linear-gradient(to top, #ffcc00, transparent 60%); }
+
+        .lane.flash-0 { background: radial-gradient(ellipse at bottom, rgba(255,51,102,0.3), transparent 70%); }
+        .lane.flash-1 { background: radial-gradient(ellipse at bottom, rgba(51,255,102,0.3), transparent 70%); }
+        .lane.flash-2 { background: radial-gradient(ellipse at bottom, rgba(51,102,255,0.3), transparent 70%); }
+        .lane.flash-3 { background: radial-gradient(ellipse at bottom, rgba(255,204,0,0.3), transparent 70%); }
+
+        .hit-zone {
+            position: absolute;
+            bottom: 12%;
+            width: 100%;
+            height: 8%;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .hit-zone-line {
+            position: absolute;
+            bottom: 12%;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            z-index: 4;
+            pointer-events: none;
+        }
+        #lane-0 .hit-zone { background: radial-gradient(ellipse, rgba(255,51,102,0.15), transparent); }
+        #lane-1 .hit-zone { background: radial-gradient(ellipse, rgba(51,255,102,0.15), transparent); }
+        #lane-2 .hit-zone { background: radial-gradient(ellipse, rgba(51,102,255,0.15), transparent); }
+        #lane-3 .hit-zone { background: radial-gradient(ellipse, rgba(255,204,0,0.15), transparent); }
+
+        #lane-0 .hit-zone-line { background: linear-gradient(90deg, transparent, #ff3366, transparent); box-shadow: 0 0 10px #ff3366; }
+        #lane-1 .hit-zone-line { background: linear-gradient(90deg, transparent, #33ff66, transparent); box-shadow: 0 0 10px #33ff66; }
+        #lane-2 .hit-zone-line { background: linear-gradient(90deg, transparent, #3366ff, transparent); box-shadow: 0 0 10px #3366ff; }
+        #lane-3 .hit-zone-line { background: linear-gradient(90deg, transparent, #ffcc00, transparent); box-shadow: 0 0 10px #ffcc00; }
+
+        .lane-icon {
+            position: absolute;
+            bottom: 2%;
+            width: 100%;
+            text-align: center;
+            font-size: 2rem;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.6;
+        }
+
+        .note {
+            position: absolute;
+            width: 80%;
+            left: 10%;
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .note.short { height: 18px; }
+        .note.lane-c0 { background: linear-gradient(135deg, #ff3366, #ff6699); box-shadow: 0 0 12px #ff3366, 0 2px 8px rgba(255,51,102,0.5); }
+        .note.lane-c1 { background: linear-gradient(135deg, #33ff66, #66ff99); box-shadow: 0 0 12px #33ff66, 0 2px 8px rgba(51,255,102,0.5); }
+        .note.lane-c2 { background: linear-gradient(135deg, #3366ff, #6699ff); box-shadow: 0 0 12px #3366ff, 0 2px 8px rgba(51,102,255,0.5); }
+        .note.lane-c3 { background: linear-gradient(135deg, #ffcc00, #ffdd55); box-shadow: 0 0 12px #ffcc00, 0 2px 8px rgba(255,204,0,0.5); }
+        .note.long { opacity: 0.85; border-radius: 8px; }
+
+        .judge-effect {
+            position: absolute;
+            bottom: 22%;
+            width: 100%;
+            text-align: center;
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 1.6rem;
+            pointer-events: none;
+            z-index: 20;
+            animation: judgePop 0.6s forwards;
+        }
+        .judge-effect.perfect { color: #ffdd00; text-shadow: 0 0 20px #ffaa00, 0 0 40px #ff6600; }
+        .judge-effect.great { color: #00ffcc; text-shadow: 0 0 15px #00ddaa; }
+        .judge-effect.good { color: #88aaff; text-shadow: 0 0 10px #6688dd; }
+        .judge-effect.miss { color: #ff4444; text-shadow: 0 0 10px #cc0000; }
+
+        @keyframes judgePop {
+            0% { opacity: 1; transform: translateY(0) scale(1.2); }
+            30% { transform: translateY(-15px) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(0.8); }
+        }
+
+        .hit-burst {
+            position: absolute;
+            bottom: 12%;
+            left: 50%;
+            width: 80px;
+            height: 80px;
+            margin-left: -40px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 15;
+            animation: burstAnim 0.4s forwards;
+        }
+        .hit-burst.lane-c0 { background: radial-gradient(circle, rgba(255,51,102,0.8), transparent 70%); }
+        .hit-burst.lane-c1 { background: radial-gradient(circle, rgba(51,255,102,0.8), transparent 70%); }
+        .hit-burst.lane-c2 { background: radial-gradient(circle, rgba(51,102,255,0.8), transparent 70%); }
+        .hit-burst.lane-c3 { background: radial-gradient(circle, rgba(255,204,0,0.8), transparent 70%); }
+
+        @keyframes burstAnim {
+            0% { transform: scale(0.3); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        #countdown {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 8rem;
+            color: #ffdd00;
+            text-shadow: 0 0 40px #ffaa00, 0 0 80px #ff6600;
+        }
+        #countdown.show { display: flex; }
+        .cd-anim { animation: cdPop 0.8s forwards; }
+        @keyframes cdPop {
+            0% { transform: scale(2); opacity: 0; }
+            20% { transform: scale(1); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: scale(0.5); opacity: 0; }
+        }
+
+        #start-screen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, #1a0044 0%, #0a0014 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+        #start-screen h1 {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: clamp(2rem, 8vw, 4rem);
+            background: linear-gradient(135deg, #ffdd00, #ff6600, #ff3366, #cc33ff, #3366ff, #00ddff);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: gradShift 3s ease infinite;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        @keyframes gradShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        #start-screen .subtitle {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        #start-screen .church-name {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .song-select-area {
+            width: 90%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+        .song-select-area h3 {
+            color: #ffdd00;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .song-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px;
+        }
+        .song-item {
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .song-item:hover { background: rgba(255,255,255,0.15); }
+        .song-item.selected {
+            border-color: #ffdd00;
+            background: rgba(255,221,0,0.15);
+        }
+        .song-item .song-name { font-size: 1rem; color: #fff; }
+        .song-item .song-meta { font-size: 0.75rem; color: #aaa; text-align: right; }
+        .song-item .song-meta .no-pattern { color: #ff6666; }
+
+        .btn {
+            padding: 14px 36px;
+            font-size: 1.2rem;
+            font-family: 'Jua', sans-serif;
+            cursor: pointer;
+            border: none;
+            border-radius: 50px;
+            color: #000;
+            font-weight: bold;
+            margin: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:active { transform: scale(0.95); }
+        .btn-play {
+            background: linear-gradient(135deg, #00ddff, #00ff88);
+            box-shadow: 0 4px 20px rgba(0,221,255,0.4);
+        }
+        .btn-play:disabled {
+            background: #444;
+            box-shadow: none;
+            color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, #ffaa00, #ff6600);
+            box-shadow: 0 4px 20px rgba(255,170,0,0.4);
+            font-size: 0.9rem;
+            padding: 10px 24px;
+        }
+
+        #rank-screen {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at center, #1a0044 0%, #0a0014 100%);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        #rank-screen h1 {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+        .result-grade {
+            font-size: 4rem;
+            margin: 10px 0;
+            animation: gradeAppear 0.8s forwards;
+        }
+        @keyframes gradeAppear {
+            0% { transform: scale(3) rotate(-10deg); opacity: 0; }
+            60% { transform: scale(1) rotate(2deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        #final-score {
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 2rem;
+            color: #ffdd00;
+            text-shadow: 0 0 15px #ffaa00;
+        }
+        .result-stats {
+            display: flex;
+            gap: 15px;
+            margin: 8px 0;
+            font-size: 0.85rem;
+            color: #aaa;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .result-stats span { color: #fff; }
+        .result-song-title {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        #user-name {
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            font-family: 'Jua', sans-serif;
+            border-radius: 50px;
+            border: 2px solid #ffdd00;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            text-align: center;
+            width: 250px;
+            outline: none;
+            margin-top: 5px;
+        }
+        #user-name::placeholder { color: #666; }
+
+        #rank-list {
+            margin-top: 15px;
+            width: 90%;
+            max-width: 350px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        #rank-list h3 { color: #ffdd00; margin-bottom: 8px; }
+        .rank-entry {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 10px;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+        .rank-entry:nth-child(odd) { background: rgba(255,255,255,0.05); }
+        .rank-1 { color: #ffdd00; font-weight: bold; }
+        .rank-2 { color: #cccccc; }
+        .rank-3 { color: #cc8844; }
+
+        #stop-record-btn {
+            display: none;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 150;
+        }
+        #record-output {
+            display: none;
+            position: absolute;
+            inset: 5%;
+            background: #1a1a2e;
+            color: #fff;
+            z-index: 200;
+            padding: 20px;
+            flex-direction: column;
+            border-radius: 16px;
+            border: 2px solid #ffaa00;
+        }
+        #record-output h3 { color: #ffaa00; margin-bottom: 10px; font-size: 0.95rem; }
+        #output-text {
+            width: 100%;
+            flex-grow: 1;
+            font-family: monospace;
+            font-size: 0.75rem;
+            background: #0d0d1a;
+            color: #00ff88;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 10px;
+            resize: none;
+        }
+
+        #progress-bar-container {
+            position: absolute;
+            bottom: 0; left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            z-index: 10;
+        }
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff3366, #ffdd00, #00ddff);
+            transition: width 0.3s;
+        }
+
+        .center-miss {
+            position: absolute;
+            top: 40%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 3rem;
+            color: rgba(255,68,68,0.8);
+            z-index: 25;
+            pointer-events: none;
+            animation: missFade 0.6s forwards;
+        }
+        @keyframes missFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8) translateY(-30px); }
+        }
+
+        .combo-milestone {
+            position: absolute;
+            top: 30%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Black Han Sans', sans-serif;
+            font-size: 2.5rem;
+            color: #ffdd00;
+            text-shadow: 0 0 30px #ffaa00;
+            z-index: 25;
+            pointer-events: none;
+            animation: milestonePop 1s forwards;
+        }
+        @keyframes milestonePop {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1) translateY(-40px); }
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+
+    <div id="info">
+        <div><div id="score-text">0</div></div>
+        <div id="combo-container" style="display:none;">
+            <div id="combo-count">0</div>
+            <div id="combo-label">C O M B O</div>
+        </div>
+        <div id="song-title-display"></div>
+    </div>
+
+    <div id="progress-bar-container"><div id="progress-bar"></div></div>
+
+    <div id="countdown"><span id="cd-text"></span></div>
+
+    <div class="lane" id="lane-0" style="left:0%">
+        <div class="hit-zone"></div><div class="hit-zone-line"></div><div class="lane-icon">🎵</div>
+    </div>
+    <div class="lane" id="lane-1" style="left:25%">
+        <div class="hit-zone"></div><div class="hit-zone-line"></div><div class="lane-icon">🎶</div>
+    </div>
+    <div class="lane" id="lane-2" style="left:50%">
+        <div class="hit-zone"></div><div class="hit-zone-line"></div><div class="lane-icon">🎵</div>
+    </div>
+    <div class="lane" id="lane-3" style="left:75%">
+        <div class="hit-zone"></div><div class="hit-zone-line"></div><div class="lane-icon">🎶</div>
+    </div>
+
+    <button class="btn btn-admin" id="stop-record-btn" onclick="endGame()">⏹️ 녹화 완료</button>
+
+    <!-- 시작 화면 -->
+    <div id="start-screen">
+        <h1 id="title-btn">🎹 할렐루야 박자왕</h1>
+        <p class="subtitle">리듬에 맞춰 찬양해요!</p>
+        <p class="church-name">이리신광교회 아동국 어린이 잔치</p>
+
+        <div class="song-select-area">
+            <h3>🎼 곡을 선택하세요</h3>
+            <div class="song-list" id="song-list"></div>
+        </div>
+
+        <button class="btn btn-play" id="btn-start" onclick="startGame(false)">🎮 게임 시작</button>
+        <button class="btn btn-admin" id="btn-admin" onclick="startGame(true)" style="display:none;">🛠️ 패턴 녹화</button>
+    </div>
+
+    <!-- 결과 화면 -->
+    <div id="rank-screen">
+        <h1>👏 찬양 완료!</h1>
+        <div class="result-song-title" id="result-song-title"></div>
+        <div class="result-grade" id="result-grade">🌟</div>
+        <div id="final-score">0점</div>
+        <div class="result-stats">
+            <div>PERFECT <span id="stat-perfect">0</span></div>
+            <div>GREAT <span id="stat-great">0</span></div>
+            <div>GOOD <span id="stat-good">0</span></div>
+            <div>MISS <span id="stat-miss">0</span></div>
+        </div>
+        <div class="result-stats">
+            <div>최대콤보 <span id="stat-maxcombo">0</span></div>
+        </div>
+        <input type="text" id="user-name" placeholder="이름을 입력하세요" maxlength="10">
+        <button class="btn btn-play" id="save-btn" onclick="saveRank()">🏆 랭킹 등록</button>
+        <div id="rank-list"></div>
+        <button class="btn" onclick="location.reload()" style="background:#444; color:white; font-size:0.9rem; margin-top:10px;">🏠 처음으로</button>
+    </div>
+
+    <!-- 녹화 결과 -->
+    <div id="record-output">
+        <h3>📋 녹화 완료! 아래 noteMap 배열을 복사하여<br>songDatabase의 해당 곡 noteMap에 붙여넣으세요</h3>
+        <textarea id="output-text"></textarea>
+        <div style="display:flex; gap:10px; margin-top:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="btn btn-play" onclick="copyOutput()" style="font-size:0.9rem; padding:10px 20px;">📋 복사하기</button>
+            <button class="btn btn-admin" onclick="location.reload()" style="font-size:0.9rem; padding:10px 20px;">닫기</button>
+        </div>
+    </div>
+</div>
+
+<audio id="bgm" preload="auto"></audio>
+
+<script>
+// ===================================================================
+//  곡 데이터베이스
+//  - id: 랭킹 구분용 (곡마다 고유하게)
+//  - noteMap이 비어있으면 일반유저는 플레이 불가, 관리자만 녹화 가능
+//  - 곡 추가: 아래 배열에 새 객체를 추가하면 자동으로 목록에 표시됨
+// ===================================================================
+const songDatabase = [
+    {
+        id: "song1",
+        title: "우리가 주를 더욱 사랑하고",
+        artist: "WELOVE",
+        audioUrl: "https://dl.dropboxusercontent.com/scl/fi/d3f881q1xxmd4hckq165z/music.mp3?rlkey=fotm5jpm4lrdffzydx589bl0y&st=v3l8tbqp&dl=1",
+        noteMap: [
+            { time: 7023, lane: 3, dur: 2711 },
+            { time: 9896, lane: 3, dur: 0 },
+            { time: 10123, lane: 2, dur: 0 },
+            { time: 10334, lane: 1, dur: 0 },
+            { time: 10540, lane: 0, dur: 3205 },
+            { time: 14669, lane: 1, dur: 0 },
+            { time: 15472, lane: 1, dur: 0 },
+            { time: 16335, lane: 2, dur: 312 },
+            { time: 17195, lane: 2, dur: 0 },
+            { time: 18035, lane: 3, dur: 288 },
+            { time: 18940, lane: 3, dur: 0 },
+            { time: 19746, lane: 0, dur: 0 },
+            { time: 21063, lane: 0, dur: 0 },
+            { time: 21481, lane: 0, dur: 0 },
+            { time: 21914, lane: 0, dur: 0 },
+            { time: 22357, lane: 0, dur: 0 },
+            { time: 22763, lane: 0, dur: 254 },
+            { time: 23215, lane: 0, dur: 0 },
+            { time: 23657, lane: 0, dur: 0 },
+            { time: 24074, lane: 0, dur: 0 },
+            { time: 24550, lane: 3, dur: 1236 },
+            { time: 25989, lane: 2, dur: 646 },
+            { time: 26809, lane: 1, dur: 861 },
+            { time: 27926, lane: 0, dur: 0 },
+            { time: 28386, lane: 0, dur: 0 },
+            { time: 28819, lane: 0, dur: 251 },
+            { time: 29258, lane: 0, dur: 0 },
+            { time: 29684, lane: 0, dur: 0 },
+            { time: 30145, lane: 0, dur: 0 },
+            { time: 30568, lane: 0, dur: 0 },
+            { time: 31004, lane: 0, dur: 0 },
+            { time: 31403, lane: 3, dur: 1270 },
+            { time: 32886, lane: 2, dur: 654 },
+            { time: 33712, lane: 1, dur: 853 },
+            { time: 34763, lane: 0, dur: 0 },
+            { time: 35213, lane: 0, dur: 0 },
+            { time: 35655, lane: 0, dur: 0 },
+            { time: 36081, lane: 0, dur: 0 },
+            { time: 36305, lane: 1, dur: 0 },
+            { time: 36530, lane: 0, dur: 0 },
+            { time: 36939, lane: 0, dur: 0 },
+            { time: 37365, lane: 0, dur: 0 },
+            { time: 37800, lane: 0, dur: 0 },
+            { time: 38016, lane: 1, dur: 0 },
+            { time: 38225, lane: 0, dur: 0 },
+            { time: 38675, lane: 0, dur: 0 },
+            { time: 39091, lane: 0, dur: 0 },
+            { time: 39500, lane: 0, dur: 0 },
+            { time: 39750, lane: 1, dur: 0 },
+            { time: 39925, lane: 0, dur: 0 },
+            { time: 40385, lane: 0, dur: 0 },
+            { time: 40900, lane: 0, dur: 0 },
+            { time: 41235, lane: 0, dur: 0 },
+            { time: 41476, lane: 2, dur: 0 },
+            { time: 41693, lane: 0, dur: 0 },
+            { time: 42127, lane: 0, dur: 0 },
+            { time: 42526, lane: 0, dur: 0 },
+            { time: 42951, lane: 0, dur: 0 },
+            { time: 43166, lane: 1, dur: 0 },
+            { time: 43368, lane: 0, dur: 0 },
+            { time: 43803, lane: 0, dur: 0 },
+            { time: 44218, lane: 0, dur: 0 },
+            { time: 44652, lane: 0, dur: 0 },
+            { time: 44879, lane: 2, dur: 0 },
+            { time: 45053, lane: 0, dur: 0 },
+            { time: 45488, lane: 0, dur: 0 },
+            { time: 45937, lane: 0, dur: 0 },
+            { time: 46370, lane: 0, dur: 0 },
+            { time: 46602, lane: 3, dur: 0 },
+            { time: 46802, lane: 0, dur: 0 },
+            { time: 47231, lane: 0, dur: 0 },
+            { time: 47662, lane: 0, dur: 0 },
+            { time: 47864, lane: 2, dur: 0 },
+            { time: 48071, lane: 1, dur: 0 },
+            { time: 48288, lane: 3, dur: 0 },
+            { time: 48522, lane: 0, dur: 803 },
+            { time: 49381, lane: 1, dur: 785 },
+            { time: 50265, lane: 2, dur: 627 },
+            { time: 51020, lane: 3, dur: 739 },
+            { time: 51915, lane: 0, dur: 728 },
+            { time: 52734, lane: 1, dur: 735 },
+            { time: 53608, lane: 2, dur: 735 },
+            { time: 54507, lane: 3, dur: 654 },
+            { time: 55366, lane: 0, dur: 653 },
+            { time: 56159, lane: 1, dur: 653 },
+            { time: 56900, lane: 0, dur: 371 },
+            { time: 57451, lane: 0, dur: 379 },
+            { time: 57935, lane: 2, dur: 744 },
+            { time: 58791, lane: 0, dur: 773 },
+            { time: 59652, lane: 1, dur: 595 },
+            { time: 60377, lane: 0, dur: 329 },
+            { time: 60924, lane: 0, dur: 331 },
+            { time: 61418, lane: 2, dur: 685 },
+            { time: 62228, lane: 0, dur: 788 },
+            { time: 63096, lane: 2, dur: 844 },
+            { time: 63966, lane: 1, dur: 267 },
+            { time: 64406, lane: 1, dur: 368 },
+            { time: 64837, lane: 3, dur: 755 },
+            { time: 65665, lane: 0, dur: 743 },
+            { time: 66506, lane: 2, dur: 687 },
+            { time: 67247, lane: 1, dur: 296 },
+            { time: 67749, lane: 1, dur: 303 },
+            { time: 68206, lane: 3, dur: 655 },
+            { time: 69033, lane: 0, dur: 737 },
+            { time: 69908, lane: 2, dur: 678 },
+            { time: 70690, lane: 1, dur: 314 },
+            { time: 71175, lane: 1, dur: 320 },
+            { time: 71598, lane: 3, dur: 698 },
+            { time: 72433, lane: 0, dur: 0 },
+            { time: 72903, lane: 0, dur: 0 },
+            { time: 73370, lane: 0, dur: 0 },
+            { time: 73803, lane: 0, dur: 0 },
+            { time: 74011, lane: 2, dur: 0 },
+            { time: 74454, lane: 1, dur: 0 },
+            { time: 74687, lane: 2, dur: 0 },
+            { time: 74895, lane: 1, dur: 0 },
+            { time: 75104, lane: 3, dur: 0 },
+            { time: 75320, lane: 0, dur: 0 },
+            { time: 75529, lane: 2, dur: 0 },
+            { time: 75939, lane: 0, dur: 0 },
+            { time: 76189, lane: 1, dur: 0 },
+            { time: 76371, lane: 0, dur: 0 },
+            { time: 76570, lane: 1, dur: 0 },
+            { time: 76796, lane: 0, dur: 0 },
+            { time: 77020, lane: 1, dur: 0 },
+            { time: 77192, lane: 0, dur: 0 },
+            { time: 77413, lane: 1, dur: 0 },
+            { time: 77638, lane: 0, dur: 0 },
+            { time: 77829, lane: 1, dur: 0 },
+            { time: 78071, lane: 0, dur: 0 },
+            { time: 78272, lane: 1, dur: 0 },
+            { time: 78496, lane: 0, dur: 0 },
+            { time: 78705, lane: 1, dur: 0 },
+            { time: 78905, lane: 0, dur: 0 },
+            { time: 79121, lane: 1, dur: 0 },
+            { time: 79349, lane: 2, dur: 0 },
+            { time: 79571, lane: 3, dur: 0 },
+            { time: 79787, lane: 2, dur: 0 },
+            { time: 80013, lane: 3, dur: 0 },
+            { time: 80247, lane: 2, dur: 0 },
+            { time: 80448, lane: 3, dur: 0 },
+            { time: 80689, lane: 2, dur: 0 },
+            { time: 80897, lane: 3, dur: 0 },
+            { time: 81106, lane: 2, dur: 0 },
+            { time: 81306, lane: 3, dur: 0 },
+            { time: 81556, lane: 2, dur: 0 },
+            { time: 81748, lane: 3, dur: 0 },
+            { time: 81965, lane: 2, dur: 0 },
+            { time: 82165, lane: 3, dur: 0 },
+            { time: 82349, lane: 2, dur: 0 },
+            { time: 82582, lane: 3, dur: 0 },
+            { time: 82790, lane: 0, dur: 0 },
+            { time: 82990, lane: 2, dur: 0 },
+            { time: 83224, lane: 1, dur: 0 },
+            { time: 83407, lane: 2, dur: 0 },
+            { time: 83649, lane: 0, dur: 0 },
+            { time: 83866, lane: 2, dur: 0 },
+            { time: 84067, lane: 1, dur: 0 },
+            { time: 84282, lane: 2, dur: 0 },
+            { time: 84491, lane: 0, dur: 0 },
+            { time: 84717, lane: 2, dur: 0 },
+            { time: 84917, lane: 1, dur: 0 },
+            { time: 85125, lane: 2, dur: 0 },
+            { time: 85342, lane: 0, dur: 0 },
+            { time: 85558, lane: 2, dur: 0 },
+            { time: 85760, lane: 1, dur: 0 },
+            { time: 85999, lane: 2, dur: 0 },
+            { time: 86225, lane: 1, dur: 0 },
+            { time: 86433, lane: 3, dur: 0 },
+            { time: 86625, lane: 2, dur: 0 },
+            { time: 86834, lane: 3, dur: 0 },
+            { time: 87060, lane: 1, dur: 0 },
+            { time: 87275, lane: 3, dur: 0 },
+            { time: 87486, lane: 2, dur: 0 },
+            { time: 87719, lane: 3, dur: 0 },
+            { time: 87910, lane: 1, dur: 0 },
+            { time: 88144, lane: 3, dur: 0 },
+            { time: 88335, lane: 2, dur: 0 },
+            { time: 88552, lane: 3, dur: 0 },
+            { time: 88752, lane: 1, dur: 0 },
+            { time: 88961, lane: 3, dur: 0 },
+            { time: 89160, lane: 2, dur: 0 },
+            { time: 89419, lane: 3, dur: 0 },
+            { time: 89628, lane: 0, dur: 0 },
+            { time: 89855, lane: 2, dur: 0 },
+            { time: 90053, lane: 1, dur: 0 },
+            { time: 90270, lane: 3, dur: 0 },
+            { time: 90495, lane: 0, dur: 0 },
+            { time: 90728, lane: 2, dur: 0 },
+            { time: 90928, lane: 1, dur: 0 },
+            { time: 91153, lane: 3, dur: 0 },
+            { time: 91337, lane: 0, dur: 0 },
+            { time: 91587, lane: 2, dur: 0 },
+            { time: 91795, lane: 1, dur: 0 },
+            { time: 92005, lane: 3, dur: 0 },
+            { time: 92205, lane: 0, dur: 0 },
+            { time: 92447, lane: 2, dur: 0 },
+            { time: 92646, lane: 1, dur: 0 },
+            { time: 92863, lane: 3, dur: 0 },
+            { time: 93072, lane: 1, dur: 0 },
+            { time: 93302, lane: 3, dur: 0 },
+            { time: 93498, lane: 2, dur: 0 },
+            { time: 93739, lane: 3, dur: 0 },
+            { time: 93964, lane: 1, dur: 0 },
+            { time: 94197, lane: 3, dur: 0 },
+            { time: 94398, lane: 2, dur: 0 },
+            { time: 94640, lane: 3, dur: 0 },
+            { time: 94832, lane: 0, dur: 0 },
+            { time: 95066, lane: 3, dur: 0 },
+            { time: 95266, lane: 1, dur: 0 },
+            { time: 95464, lane: 2, dur: 0 },
+            { time: 95674, lane: 0, dur: 0 },
+            { time: 95874, lane: 3, dur: 0 },
+            { time: 96100, lane: 1, dur: 0 },
+            { time: 96308, lane: 2, dur: 0 },
+            { time: 96492, lane: 0, dur: 0 },
+            { time: 96719, lane: 3, dur: 0 },
+            { time: 96926, lane: 1, dur: 0 },
+            { time: 97158, lane: 2, dur: 0 },
+            { time: 97409, lane: 0, dur: 0 },
+            { time: 97618, lane: 3, dur: 0 },
+            { time: 97826, lane: 1, dur: 0 },
+            { time: 98044, lane: 2, dur: 0 },
+            { time: 98225, lane: 0, dur: 0 },
+            { time: 98443, lane: 3, dur: 0 },
+            { time: 98633, lane: 1, dur: 0 },
+            { time: 98859, lane: 2, dur: 0 },
+            { time: 99033, lane: 0, dur: 0 },
+            { time: 99285, lane: 2, dur: 0 },
+            { time: 99495, lane: 1, dur: 0 },
+            { time: 99678, lane: 3, dur: 0 },
+            { time: 99878, lane: 2, dur: 0 },
+            { time: 100110, lane: 3, dur: 0 },
+            { time: 100318, lane: 1, dur: 0 },
+            { time: 100552, lane: 3, dur: 0 },
+            { time: 100751, lane: 0, dur: 0 },
+            { time: 101011, lane: 3, dur: 0 },
+            { time: 101194, lane: 1, dur: 0 },
+            { time: 101427, lane: 2, dur: 0 },
+            { time: 101622, lane: 0, dur: 0 },
+            { time: 101845, lane: 3, dur: 0 },
+            { time: 102045, lane: 1, dur: 0 },
+            { time: 102245, lane: 2, dur: 0 },
+            { time: 102553, lane: 0, dur: 0 },
+            { time: 102745, lane: 3, dur: 0 },
+            { time: 102962, lane: 1, dur: 0 },
+            { time: 103163, lane: 3, dur: 0 },
+            { time: 103352, lane: 2, dur: 1638 },
+            { time: 105020, lane: 3, dur: 1746 },
+            { time: 106906, lane: 0, dur: 1379 },
+            { time: 108406, lane: 2, dur: 0 },
+            { time: 108632, lane: 1, dur: 0 },
+            { time: 108856, lane: 3, dur: 0 },
+            { time: 109049, lane: 1, dur: 0 },
+            { time: 109281, lane: 2, dur: 0 },
+            { time: 109466, lane: 0, dur: 369 },
+            { time: 109882, lane: 3, dur: 311 },
+            { time: 110300, lane: 0, dur: 1262 },
+            { time: 111425, lane: 2, dur: 0 },
+            { time: 111875, lane: 1, dur: 0 },
+            { time: 112512, lane: 3, dur: 0 },
+            { time: 112933, lane: 0, dur: 295 },
+            { time: 113368, lane: 2, dur: 0 },
+            { time: 113768, lane: 0, dur: 1036 },
+            { time: 114858, lane: 1, dur: 0 },
+            { time: 115271, lane: 2, dur: 0 },
+            { time: 115711, lane: 3, dur: 351 },
+            { time: 116303, lane: 2, dur: 260 },
+            { time: 116703, lane: 1, dur: 0 },
+            { time: 117119, lane: 0, dur: 761 },
+            { time: 117969, lane: 3, dur: 588 },
+            { time: 118636, lane: 1, dur: 279 },
+            { time: 119071, lane: 1, dur: 0 },
+            { time: 119292, lane: 2, dur: 349 },
+            { time: 119695, lane: 0, dur: 371 },
+            { time: 120138, lane: 3, dur: 386 },
+            { time: 120588, lane: 1, dur: 770 },
+            { time: 121456, lane: 2, dur: 561 },
+            { time: 122063, lane: 0, dur: 0 },
+            { time: 122515, lane: 0, dur: 0 },
+            { time: 122724, lane: 3, dur: 0 },
+            { time: 122941, lane: 1, dur: 0 },
+            { time: 123132, lane: 2, dur: 0 },
+            { time: 123364, lane: 0, dur: 0 },
+            { time: 123556, lane: 3, dur: 337 },
+            { time: 123989, lane: 1, dur: 787 },
+            { time: 124853, lane: 2, dur: 433 },
+            { time: 125474, lane: 3, dur: 295 },
+            { time: 126042, lane: 3, dur: 361 },
+            { time: 126483, lane: 0, dur: 0 },
+            { time: 126700, lane: 2, dur: 0 },
+            { time: 126926, lane: 1, dur: 0 },
+            { time: 127126, lane: 3, dur: 0 },
+            { time: 127417, lane: 1, dur: 678 },
+            { time: 128269, lane: 2, dur: 585 },
+            { time: 128932, lane: 0, dur: 0 },
+            { time: 129339, lane: 0, dur: 0 },
+            { time: 129577, lane: 3, dur: 0 },
+            { time: 130882, lane: 0, dur: 1357 },
+            { time: 132403, lane: 3, dur: 287 },
+            { time: 132878, lane: 2, dur: 0 },
+            { time: 133077, lane: 1, dur: 0 },
+            { time: 133310, lane: 2, dur: 0 },
+            { time: 133513, lane: 0, dur: 0 },
+            { time: 133697, lane: 3, dur: 0 },
+            { time: 133885, lane: 1, dur: 397 },
+            { time: 134353, lane: 2, dur: 988 },
+            { time: 135394, lane: 0, dur: 0 },
+            { time: 135597, lane: 1, dur: 0 },
+            { time: 135822, lane: 2, dur: 0 },
+            { time: 136248, lane: 3, dur: 0 },
+            { time: 136455, lane: 0, dur: 0 },
+            { time: 136681, lane: 2, dur: 0 },
+            { time: 136888, lane: 1, dur: 0 },
+            { time: 137054, lane: 3, dur: 379 },
+            { time: 137313, lane: 0, dur: 412 },
+            { time: 137747, lane: 2, dur: 1587 },
+            { time: 139491, lane: 0, dur: 0 },
+            { time: 139653, lane: 1, dur: 0 },
+            { time: 139902, lane: 2, dur: 0 },
+            { time: 140127, lane: 3, dur: 0 },
+            { time: 140331, lane: 1, dur: 0 },
+            { time: 140547, lane: 2, dur: 0 },
+            { time: 140741, lane: 0, dur: 354 },
+            { time: 141156, lane: 1, dur: 1222 },
+            { time: 142602, lane: 3, dur: 585 },
+            { time: 143342, lane: 2, dur: 778 },
+            { time: 144152, lane: 1, dur: 270 },
+            { time: 144578, lane: 3, dur: 0 },
+            { time: 144829, lane: 0, dur: 0 },
+            { time: 145020, lane: 3, dur: 0 },
+            { time: 145279, lane: 0, dur: 0 },
+            { time: 145477, lane: 3, dur: 0 },
+            { time: 145710, lane: 0, dur: 0 },
+            { time: 145909, lane: 3, dur: 0 },
+            { time: 146116, lane: 0, dur: 0 },
+            { time: 146342, lane: 3, dur: 0 },
+            { time: 146545, lane: 0, dur: 0 },
+            { time: 146771, lane: 3, dur: 0 },
+            { time: 147170, lane: 3, dur: 0 },
+            { time: 147385, lane: 0, dur: 0 },
+            { time: 147601, lane: 3, dur: 0 },
+            { time: 147801, lane: 0, dur: 0 },
+            { time: 148003, lane: 3, dur: 0 },
+            { time: 148210, lane: 1, dur: 0 },
+            { time: 148411, lane: 3, dur: 0 },
+            { time: 148637, lane: 1, dur: 0 },
+            { time: 148870, lane: 3, dur: 0 },
+            { time: 149093, lane: 1, dur: 0 },
+            { time: 149303, lane: 3, dur: 0 },
+            { time: 149494, lane: 1, dur: 0 },
+            { time: 149729, lane: 3, dur: 0 },
+            { time: 149936, lane: 1, dur: 0 },
+            { time: 150146, lane: 3, dur: 0 },
+            { time: 150562, lane: 3, dur: 0 },
+            { time: 150795, lane: 1, dur: 0 },
+            { time: 150995, lane: 3, dur: 0 },
+            { time: 151455, lane: 3, dur: 0 },
+            { time: 151662, lane: 2, dur: 0 },
+            { time: 151873, lane: 3, dur: 0 },
+            { time: 152096, lane: 1, dur: 0 },
+            { time: 152323, lane: 3, dur: 0 },
+            { time: 152555, lane: 0, dur: 0 },
+            { time: 152755, lane: 3, dur: 0 },
+            { time: 152955, lane: 1, dur: 0 },
+            { time: 153197, lane: 3, dur: 0 },
+            { time: 153396, lane: 2, dur: 0 },
+            { time: 153623, lane: 3, dur: 0 },
+            { time: 153856, lane: 1, dur: 0 },
+            { time: 154057, lane: 3, dur: 0 },
+            { time: 154490, lane: 3, dur: 0 },
+            { time: 154723, lane: 0, dur: 0 },
+            { time: 154932, lane: 3, dur: 0 },
+            { time: 155157, lane: 1, dur: 0 },
+            { time: 155340, lane: 2, dur: 0 },
+            { time: 155515, lane: 0, dur: 0 },
+            { time: 155741, lane: 3, dur: 0 },
+            { time: 155957, lane: 1, dur: 0 },
+            { time: 156166, lane: 2, dur: 0 },
+            { time: 156366, lane: 0, dur: 0 },
+            { time: 156609, lane: 2, dur: 0 },
+            { time: 156849, lane: 1, dur: 0 },
+            { time: 157066, lane: 2, dur: 0 },
+            { time: 157266, lane: 1, dur: 0 },
+            { time: 157475, lane: 2, dur: 0 },
+            { time: 157675, lane: 1, dur: 0 },
+            { time: 157875, lane: 2, dur: 0 },
+            { time: 158058, lane: 1, dur: 0 },
+            { time: 158318, lane: 2, dur: 0 },
+            { time: 158516, lane: 1, dur: 0 },
+            { time: 158743, lane: 3, dur: 0 },
+            { time: 158950, lane: 0, dur: 0 },
+            { time: 159168, lane: 2, dur: 0 },
+            { time: 159394, lane: 1, dur: 0 },
+            { time: 159593, lane: 3, dur: 0 },
+            { time: 159801, lane: 0, dur: 0 },
+            { time: 160052, lane: 2, dur: 0 },
+            { time: 160243, lane: 1, dur: 0 },
+            { time: 160435, lane: 3, dur: 0 },
+            { time: 160678, lane: 0, dur: 0 },
+            { time: 160894, lane: 2, dur: 0 },
+            { time: 161110, lane: 1, dur: 0 },
+            { time: 161284, lane: 3, dur: 0 },
+            { time: 161518, lane: 1, dur: 0 },
+            { time: 161769, lane: 1, dur: 0 },
+            { time: 161953, lane: 2, dur: 0 },
+            { time: 162187, lane: 0, dur: 0 },
+            { time: 162386, lane: 2, dur: 0 },
+            { time: 162603, lane: 1, dur: 0 },
+            { time: 162819, lane: 2, dur: 0 },
+            { time: 163037, lane: 0, dur: 0 },
+            { time: 163262, lane: 2, dur: 0 },
+            { time: 163445, lane: 1, dur: 0 },
+            { time: 163669, lane: 2, dur: 0 },
+            { time: 163929, lane: 1, dur: 0 },
+            { time: 164137, lane: 2, dur: 0 },
+            { time: 164348, lane: 0, dur: 0 },
+            { time: 164553, lane: 2, dur: 0 },
+            { time: 164771, lane: 1, dur: 0 },
+            { time: 164970, lane: 3, dur: 0 },
+            { time: 165221, lane: 1, dur: 0 },
+            { time: 165647, lane: 2, dur: 0 },
+            { time: 166247, lane: 3, dur: 0 },
+            { time: 166439, lane: 1, dur: 0 },
+            { time: 166622, lane: 2, dur: 404 },
+            { time: 167081, lane: 0, dur: 0 },
+            { time: 167271, lane: 1, dur: 0 },
+            { time: 167748, lane: 3, dur: 0 },
+            { time: 167955, lane: 2, dur: 0 },
+            { time: 168148, lane: 1, dur: 0 },
+            { time: 168373, lane: 3, dur: 0 },
+            { time: 168566, lane: 0, dur: 345 },
+            { time: 169223, lane: 2, dur: 638 },
+            { time: 169882, lane: 1, dur: 304 },
+            { time: 170241, lane: 3, dur: 345 },
+            { time: 170707, lane: 2, dur: 355 },
+            { time: 171133, lane: 0, dur: 0 },
+            { time: 171667, lane: 2, dur: 0 },
+            { time: 172016, lane: 1, dur: 505 },
+            { time: 172651, lane: 3, dur: 404 },
+            { time: 173108, lane: 0, dur: 0 },
+            { time: 173310, lane: 2, dur: 0 },
+            { time: 173501, lane: 1, dur: 528 },
+            { time: 174160, lane: 3, dur: 478 },
+            { time: 174618, lane: 0, dur: 437 },
+            { time: 175077, lane: 2, dur: 712 },
+            { time: 175858, lane: 1, dur: 1433 },
+            { time: 177304, lane: 2, dur: 402 },
+            { time: 177837, lane: 2, dur: 0 },
+            { time: 178259, lane: 3, dur: 0 },
+            { time: 178646, lane: 3, dur: 0 },
+            { time: 178921, lane: 3, dur: 0 },
+            { time: 179231, lane: 3, dur: 0 },
+            { time: 179513, lane: 3, dur: 0 },
+            { time: 179729, lane: 0, dur: 0 },
+            { time: 179913, lane: 2, dur: 0 },
+            { time: 180113, lane: 1, dur: 0 },
+            { time: 180255, lane: 3, dur: 0 },
+            { time: 180405, lane: 0, dur: 0 },
+            { time: 180538, lane: 2, dur: 0 },
+            { time: 180693, lane: 1, dur: 0 },
+            { time: 180820, lane: 3, dur: 0 },
+            { time: 180964, lane: 0, dur: 0 },
+            { time: 181080, lane: 2, dur: 0 },
+            { time: 181231, lane: 1, dur: 0 },
+            { time: 181422, lane: 2, dur: 0 },
+            { time: 181573, lane: 0, dur: 0 },
+            { time: 181681, lane: 1, dur: 0 },
+            { time: 181840, lane: 0, dur: 0 },
+            { time: 181853, lane: 2, dur: 0 },
+            { time: 181973, lane: 1, dur: 0 },
+            { time: 182106, lane: 2, dur: 0 },
+            { time: 182223, lane: 1, dur: 0 },
+            { time: 182363, lane: 2, dur: 0 },
+            { time: 182464, lane: 1, dur: 0 },
+            { time: 182564, lane: 0, dur: 0 },
+            { time: 182867, lane: 0, dur: 0 },
+            { time: 182991, lane: 2, dur: 0 },
+            { time: 183123, lane: 1, dur: 0 },
+            { time: 183241, lane: 3, dur: 0 },
+            { time: 183425, lane: 0, dur: 0 },
+            { time: 183555, lane: 2, dur: 0 },
+            { time: 183715, lane: 1, dur: 0 },
+            { time: 183806, lane: 3, dur: 0 },
+            { time: 183965, lane: 0, dur: 0 },
+            { time: 184055, lane: 2, dur: 0 },
+            { time: 184232, lane: 1, dur: 0 },
+            { time: 184356, lane: 3, dur: 0 },
+            { time: 184532, lane: 0, dur: 0 },
+            { time: 184724, lane: 2, dur: 746 },
+            { time: 185516, lane: 1, dur: 805 }
+        ]
+    },
+   {
+        id: "song2",
+        title: "너는 꽃이야",
+        artist: "히즈플랜",
+        audioUrl: "https://www.dropbox.com/scl/fi/wuvw7vpmlhxtu30porxyk/music2.mp3?rlkey=2wuytp9hu25ik7eany8osr8x3&st=rczgetbq&dl=1",
+noteMap: [
+  { time: 1882, lane: 0, dur: 567 },
+    { time: 2957, lane: 1, dur: 508 },
+    { time: 3948, lane: 2, dur: 623 },
+    { time: 4950, lane: 3, dur: 568 },
+    { time: 5981, lane: 3, dur: 522 },
+    { time: 6923, lane: 2, dur: 551 },
+    { time: 7896, lane: 1, dur: 359 },
+    { time: 8459, lane: 0, dur: 0 },
+    { time: 8991, lane: 2, dur: 0 },
+    { time: 9984, lane: 1, dur: 0 },
+    { time: 10290, lane: 2, dur: 0 },
+    { time: 10449, lane: 0, dur: 0 },
+    { time: 10709, lane: 2, dur: 0 },
+    { time: 10907, lane: 1, dur: 0 },
+    { time: 11291, lane: 2, dur: 0 },
+    { time: 11496, lane: 0, dur: 0 },
+    { time: 11773, lane: 3, dur: 0 },
+    { time: 11948, lane: 1, dur: 0 },
+    { time: 12262, lane: 2, dur: 0 },
+    { time: 13784, lane: 0, dur: 0 },
+    { time: 14014, lane: 1, dur: 0 },
+    { time: 14301, lane: 1, dur: 0 },
+    { time: 14471, lane: 2, dur: 0 },
+    { time: 14759, lane: 1, dur: 0 },
+    { time: 14957, lane: 3, dur: 0 },
+    { time: 15258, lane: 1, dur: 0 },
+    { time: 15417, lane: 2, dur: 0 },
+    { time: 15793, lane: 0, dur: 0 },
+    { time: 15954, lane: 1, dur: 0 },
+    { time: 16451, lane: 2, dur: 0 },
+    { time: 16993, lane: 3, dur: 0 },
+    { time: 17437, lane: 1, dur: 0 },
+    { time: 18955, lane: 1, dur: 0 },
+    { time: 19929, lane: 1, dur: 0 },
+    { time: 20740, lane: 2, dur: 0 },
+    { time: 20907, lane: 3, dur: 0 },
+    { time: 21940, lane: 1, dur: 0 },
+    { time: 22942, lane: 1, dur: 0 },
+    { time: 23985, lane: 1, dur: 0 },
+    { time: 24764, lane: 2, dur: 0 },
+    { time: 24938, lane: 0, dur: 0 },
+    { time: 25951, lane: 1, dur: 0 },
+    { time: 26957, lane: 1, dur: 285 },
+    { time: 27942, lane: 1, dur: 265 },
+    { time: 28833, lane: 2, dur: 0 },
+    { time: 29000, lane: 0, dur: 0 },
+    { time: 29942, lane: 1, dur: 278 },
+    { time: 30917, lane: 1, dur: 0 },
+    { time: 31476, lane: 2, dur: 0 },
+    { time: 31812, lane: 3, dur: 0 },
+    { time: 32005, lane: 0, dur: 0 },
+    { time: 32339, lane: 1, dur: 0 },
+    { time: 32506, lane: 2, dur: 0 },
+    { time: 33007, lane: 3, dur: 0 },
+    { time: 33520, lane: 1, dur: 0 },
+    { time: 33904, lane: 2, dur: 0 },
+    { time: 34427, lane: 0, dur: 0 },
+    { time: 34984, lane: 3, dur: 0 },
+    { time: 35375, lane: 1, dur: 0 },
+    { time: 35915, lane: 2, dur: 0 },
+    { time: 36388, lane: 0, dur: 0 },
+    { time: 36975, lane: 3, dur: 0 },
+    { time: 37442, lane: 1, dur: 0 },
+    { time: 37920, lane: 2, dur: 0 },
+    { time: 38410, lane: 0, dur: 0 },
+    { time: 38962, lane: 3, dur: 0 },
+    { time: 39498, lane: 1, dur: 0 },
+    { time: 39936, lane: 2, dur: 0 },
+    { time: 40437, lane: 3, dur: 0 },
+    { time: 40933, lane: 0, dur: 0 },
+    { time: 41476, lane: 2, dur: 0 },
+    { time: 41752, lane: 1, dur: 0 },
+    { time: 41975, lane: 3, dur: 0 },
+    { time: 42152, lane: 0, dur: 0 },
+    { time: 42359, lane: 2, dur: 0 },
+    { time: 42632, lane: 1, dur: 0 },
+    { time: 42867, lane: 1, dur: 0 },
+    { time: 43406, lane: 3, dur: 0 },
+    { time: 43755, lane: 0, dur: 0 },
+    { time: 43895, lane: 2, dur: 0 },
+    { time: 44265, lane: 1, dur: 0 },
+    { time: 44452, lane: 2, dur: 0 },
+    { time: 44907, lane: 0, dur: 0 },
+    { time: 45380, lane: 2, dur: 725 },
+    { time: 46421, lane: 1, dur: 584 },
+    { time: 47450, lane: 2, dur: 476 },
+    { time: 48023, lane: 0, dur: 414 },
+    { time: 48955, lane: 0, dur: 421 },
+    { time: 49749, lane: 1, dur: 0 },
+    { time: 49947, lane: 2, dur: 0 },
+    { time: 50295, lane: 3, dur: 0 },
+    { time: 50791, lane: 0, dur: 0 },
+    { time: 50973, lane: 2, dur: 0 },
+    { time: 51375, lane: 1, dur: 558 },
+    { time: 52430, lane: 2, dur: 0 },
+    { time: 52817, lane: 1, dur: 0 },
+    { time: 53016, lane: 3, dur: 0 },
+    { time: 53477, lane: 1, dur: 914 },
+    { time: 54453, lane: 3, dur: 0 },
+    { time: 54790, lane: 0, dur: 0 },
+    { time: 54973, lane: 2, dur: 0 },
+    { time: 55427, lane: 1, dur: 898 },
+    { time: 56427, lane: 2, dur: 0 },
+    { time: 56729, lane: 0, dur: 0 },
+    { time: 56941, lane: 3, dur: 0 },
+    { time: 57357, lane: 1, dur: 963 },
+    { time: 58453, lane: 2, dur: 0 },
+    { time: 58610, lane: 0, dur: 0 },
+    { time: 58765, lane: 2, dur: 0 },
+    { time: 58925, lane: 1, dur: 0 },
+    { time: 59076, lane: 2, dur: 0 },
+    { time: 59224, lane: 1, dur: 0 },
+    { time: 59355, lane: 3, dur: 0 },
+    { time: 59526, lane: 0, dur: 789 },
+    { time: 60373, lane: 2, dur: 0 },
+    { time: 60767, lane: 1, dur: 0 },
+    { time: 60987, lane: 3, dur: 0 },
+    { time: 61396, lane: 0, dur: 905 },
+    { time: 62435, lane: 2, dur: 0 },
+    { time: 62594, lane: 1, dur: 0 },
+    { time: 62750, lane: 2, dur: 0 },
+    { time: 62941, lane: 1, dur: 0 },
+    { time: 63055, lane: 3, dur: 0 },
+    { time: 63483, lane: 0, dur: 652 },
+    { time: 64374, lane: 2, dur: 0 },
+    { time: 64728, lane: 1, dur: 0 },
+    { time: 64887, lane: 3, dur: 0 },
+    { time: 65288, lane: 0, dur: 0 },
+    { time: 65464, lane: 1, dur: 0 },
+    { time: 65998, lane: 2, dur: 0 },
+    { time: 66446, lane: 3, dur: 0 },
+    { time: 66963, lane: 1, dur: 411 },
+    { time: 67428, lane: 2, dur: 900 },
+    { time: 68434, lane: 1, dur: 1044 },
+    { time: 69462, lane: 3, dur: 966 },
+    { time: 70437, lane: 0, dur: 968 },
+    { time: 71417, lane: 2, dur: 0 },
+    { time: 71945, lane: 1, dur: 470 },
+    { time: 72448, lane: 2, dur: 0 },
+    { time: 72880, lane: 0, dur: 431 },
+    { time: 73381, lane: 3, dur: 348 },
+    { time: 73929, lane: 3, dur: 406 },
+    { time: 74447, lane: 2, dur: 0 },
+    { time: 74934, lane: 2, dur: 431 },
+    { time: 75498, lane: 1, dur: 260 },
+    { time: 75913, lane: 1, dur: 470 },
+    { time: 76489, lane: 0, dur: 397 },
+    { time: 76980, lane: 0, dur: 418 },
+    { time: 77507, lane: 1, dur: 406 },
+    { time: 77998, lane: 1, dur: 469 },
+    { time: 78451, lane: 2, dur: 371 },
+    { time: 78930, lane: 2, dur: 287 },
+    { time: 79429, lane: 1, dur: 0 },
+    { time: 79765, lane: 2, dur: 0 },
+    { time: 79951, lane: 0, dur: 0 },
+    { time: 80199, lane: 1, dur: 0 },
+    { time: 80392, lane: 1, dur: 0 },
+    { time: 80753, lane: 2, dur: 0 },
+    { time: 80938, lane: 3, dur: 0 },
+    { time: 81089, lane: 0, dur: 0 },
+    { time: 81346, lane: 2, dur: 0 },
+    { time: 81876, lane: 1, dur: 0 },
+    { time: 82412, lane: 2, dur: 0 },
+    { time: 82909, lane: 0, dur: 0 },
+    { time: 83451, lane: 1, dur: 0 }
+]
+    },
+
+
+    // ★ 곡 추가 방법: 위 닫는 } 뒤에 쉼표(,)를 붙이고 아래처럼 추가
+    // ,{
+    //     id: "song2",
+    //     title: "두번째 찬양",
+    //     artist: "이리신광교회",
+    //     audioUrl: "https://음악파일URL",
+    //     noteMap: []
+    // }
+];
+
+// ===================================================================
+//  전역 변수
+// ===================================================================
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwcAFYMpsCoYKyMCokMzHAHe1Ra75qifgeIUWRgLHsPXMy9RpvqHztX68sjPeMxxOL37Q/exec";
+const bgm = document.getElementById('bgm');
+const fallDuration = 1500;
+const PERFECT_RANGE = 80;
+const GREAT_RANGE = 150;
+const GOOD_RANGE = 250;
+
+let score = 0, combo = 0, maxCombo = 0;
+let judgeCounts = { perfect: 0, great: 0, good: 0, miss: 0 };
+let isRecording = false, recordedNotes = [], activeNotes = [];
+let isLanePressed = [false, false, false, false];
+let recordingStartTimes = [null, null, null, null];
+let animationId, noteIndex = 0;
+let selectedSongIndex = 0;
+let currentNoteMap = [];
+let isAdminMode = false;
+let gameStarted = false;
+
+// ===================================================================
+//  Web Audio API 타격음
+// ===================================================================
+let audioCtx = null;
+function initAudio() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+function playHitSound(type) {
+    if (!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'perfect') {
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    } else if (type === 'great') {
+        osc.frequency.value = 660;
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    } else if (type === 'good') {
+        osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    } else {
+        osc.frequency.value = 200;
+        osc.type = 'sawtooth';
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    }
+
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + 0.15);
+}
+
+// ===================================================================
+//  초기화
+// ===================================================================
+function createParticles() {
+    const container = document.getElementById('game-container');
+    const colors = ['#ff3366', '#33ff66', '#3366ff', '#ffcc00', '#cc33ff', '#00ddff'];
+    for (let i = 0; i < 20; i++) {
+        const p = document.createElement('div');
+        p.className = 'bg-particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.width = p.style.height = (Math.random() * 6 + 2) + 'px';
+        p.style.background = colors[Math.floor(Math.random() * colors.length)];
+        p.style.animationDuration = (Math.random() * 8 + 6) + 's';
+        p.style.animationDelay = (Math.random() * 10) + 's';
+        container.appendChild(p);
+    }
+}
+
+function buildSongList() {
+    const list = document.getElementById('song-list');
+    list.innerHTML = '';
+    songDatabase.forEach((song, i) => {
+        const hasPattern = song.noteMap && song.noteMap.length > 0;
+        const item = document.createElement('div');
+        item.className = 'song-item' + (i === selectedSongIndex ? ' selected' : '');
+        item.innerHTML = `
+            <div>
+                <div class="song-name">${song.title}</div>
+                <div style="font-size:0.7rem; color:#888;">${song.artist || ''}</div>
+            </div>
+            <div class="song-meta">
+                ${hasPattern
+                    ? `<div>${song.noteMap.length}노트</div>`
+                    : `<div class="no-pattern">패턴 없음</div>`}
+            </div>`;
+        item.onclick = () => selectSong(i);
+        list.appendChild(item);
+    });
+    updateStartButton();
+}
+
+function selectSong(index) {
+    selectedSongIndex = index;
+    document.querySelectorAll('.song-item').forEach((el, i) => {
+        el.classList.toggle('selected', i === index);
+    });
+    updateStartButton();
+}
+
+function updateStartButton() {
+    const song = songDatabase[selectedSongIndex];
+    const hasPattern = song.noteMap && song.noteMap.length > 0;
+    const btn = document.getElementById('btn-start');
+    if (!hasPattern) {
+        btn.disabled = true;
+        btn.innerText = '⚠️ 패턴이 없는 곡입니다';
+    } else {
+        btn.disabled = false;
+        btn.innerText = '🎮 게임 시작';
+    }
+}
+
+// ===================================================================
+//  관리자 모드 (타이틀 5번 탭 or ?admin=1)
+// ===================================================================
+function checkAdminMode() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('admin') === '1') {
+        activateAdmin();
+    }
+
+    let tapCount = 0;
+    let tapTimer = null;
+
+    document.getElementById('title-btn').addEventListener('click', () => {
+        tapCount++;
+        if (tapTimer) clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => { tapCount = 0; }, 3000);
+
+        if (tapCount >= 5) {
+            tapCount = 0;
+            clearTimeout(tapTimer);
+            activateAdmin();
+        }
+    });
+}
+
+function activateAdmin() {
+    if (isAdminMode) return;
+    isAdminMode = true;
+    document.getElementById('btn-admin').style.display = 'inline-flex';
+
+    const notice = document.createElement('div');
+    notice.style.cssText = 'position:fixed; top:20px; left:50%; transform:translateX(-50%); background:linear-gradient(135deg,#ffaa00,#ff6600); color:#000; padding:12px 24px; border-radius:50px; font-family:Jua,sans-serif; font-size:1rem; font-weight:bold; z-index:9999; animation:fadeInOut 2s forwards;';
+    notice.innerText = '🔓 관리자 모드 활성화!';
+    document.body.appendChild(notice);
+    setTimeout(() => notice.remove(), 2000);
+}
+
+// ===================================================================
+//  포인터 이벤트 (멀티터치 대응)
+// ===================================================================
+function setupPointerEvents() {
+    for (let i = 0; i < 4; i++) {
+        const lane = document.getElementById('lane-' + i);
+        lane.addEventListener('pointerdown', (e) => handlePointerDown(i, e), { passive: false });
+        lane.addEventListener('pointerup', (e) => handlePointerUp(i, e), { passive: false });
+        lane.addEventListener('pointercancel', (e) => handlePointerUp(i, e), { passive: false });
+        lane.addEventListener('pointerleave', (e) => handlePointerUp(i, e), { passive: false });
+        lane.style.touchAction = 'none';
+    }
+}
+
+function handlePointerDown(laneIdx, e) {
+    e.preventDefault();
+    if (!gameStarted && !isRecording) return;
+    initAudio();
+    isLanePressed[laneIdx] = true;
+    document.getElementById('lane-' + laneIdx).classList.add('flash-' + laneIdx);
+
+    if (isRecording) {
+        recordingStartTimes[laneIdx] = Math.floor(bgm.currentTime * 1000);
+    } else {
+        checkHit(laneIdx);
+    }
+}
+
+function handlePointerUp(laneIdx, e) {
+    if (!gameStarted && !isRecording) return;
+    isLanePressed[laneIdx] = false;
+    document.getElementById('lane-' + laneIdx).classList.remove('flash-' + laneIdx);
+
+    if (isRecording && recordingStartTimes[laneIdx] !== null) {
+        let dur = Math.floor(bgm.currentTime * 1000) - recordingStartTimes[laneIdx];
+        recordedNotes.push(`{ time: ${recordingStartTimes[laneIdx]}, lane: ${laneIdx}, dur: ${dur > 250 ? dur : 0} }`);
+        recordingStartTimes[laneIdx] = null;
+    }
+}
+
+// ===================================================================
+//  카운트다운
+// ===================================================================
+function doCountdown() {
+    return new Promise(resolve => {
+        const cdEl = document.getElementById('countdown');
+        const cdText = document.getElementById('cd-text');
+        cdEl.classList.add('show');
+        let count = 3;
+
+        function tick() {
+            if (count > 0) {
+                cdText.innerHTML = `<span class="cd-anim">${count}</span>`;
+                count--;
+                setTimeout(tick, 800);
+            } else {
+                cdText.innerHTML = `<span class="cd-anim">🎵</span>`;
+                setTimeout(() => {
+                    cdEl.classList.remove('show');
+                    resolve();
+                }, 600);
+            }
+        }
+        tick();
+    });
+}
+
+// ===================================================================
+//  게임 시작/종료
+// ===================================================================
+async function startGame(recordMode) {
+    isRecording = recordMode;
+    const song = songDatabase[selectedSongIndex];
+
+    bgm.src = song.audioUrl;
+    currentNoteMap = song.noteMap;
+    document.getElementById('song-title-display').innerText = song.title;
+    document.getElementById('start-screen').style.display = 'none';
+
+    if (isRecording) {
+        document.getElementById('stop-record-btn').style.display = 'block';
+        bgm.play();
+        bgm.onended = () => endGame();
+        gameStarted = true;
+        return;
+    }
+
+    await doCountdown();
+    gameStarted = true;
+    noteIndex = 0;
+    animationId = requestAnimationFrame(gameLoop);
+    bgm.play();
+    bgm.onended = () => endGame();
+}
+
+function endGame() {
+    bgm.pause();
+    gameStarted = false;
+    cancelAnimationFrame(animationId);
+
+    activeNotes.forEach(n => n.element.remove());
+    activeNotes = [];
+
+    if (isRecording) {
+        document.getElementById('record-output').style.display = 'flex';
+        document.getElementById('output-text').value =
+            `noteMap: [\n    ${recordedNotes.join(',\n    ')}\n]`;
+    } else {
+        document.getElementById('rank-screen').style.display = 'flex';
+        document.getElementById('result-song-title').innerText = '🎵 ' + songDatabase[selectedSongIndex].title;
+        document.getElementById('final-score').innerText = score + '점';
+        document.getElementById('stat-perfect').innerText = judgeCounts.perfect;
+        document.getElementById('stat-great').innerText = judgeCounts.great;
+        document.getElementById('stat-good').innerText = judgeCounts.good;
+        document.getElementById('stat-miss').innerText = judgeCounts.miss;
+        document.getElementById('stat-maxcombo').innerText = maxCombo;
+
+        const total = currentNoteMap.length;
+        const ratio = total > 0 ? (judgeCounts.perfect + judgeCounts.great) / total : 0;
+        let grade = '⭐';
+        if (judgeCounts.miss === 0 && ratio >= 0.95) grade = '👑 SSS';
+        else if (ratio >= 0.9) grade = '🌟 SS';
+        else if (ratio >= 0.8) grade = '⭐ S';
+        else if (ratio >= 0.65) grade = '🅰️ A';
+        else if (ratio >= 0.5) grade = '🅱️ B';
+        else grade = '💪 C';
+        document.getElementById('result-grade').innerText = grade;
+
+        displayRanks();
+    }
+}
+
+// ===================================================================
+//  판정 & 히트
+// ===================================================================
+function checkHit(laneIdx) {
+    let currentTime = bgm.currentTime * 1000;
+    let targetIdx = -1, minDiff = GOOD_RANGE;
+
+    for (let i = 0; i < activeNotes.length; i++) {
+        let n = activeNotes[i];
+        if (n.data.lane === laneIdx && !n.isBeingHeld) {
+            let diff = Math.abs(n.data.time - currentTime);
+            if (diff < minDiff) { minDiff = diff; targetIdx = i; }
+        }
+    }
+
+    if (targetIdx !== -1) {
+        let n = activeNotes[targetIdx];
+        let diff = Math.abs(n.data.time - currentTime);
+        let judgeType, judgeScore;
+
+        if (diff <= PERFECT_RANGE) { judgeType = 'perfect'; judgeScore = 20; }
+        else if (diff <= GREAT_RANGE) { judgeType = 'great'; judgeScore = 15; }
+        else { judgeType = 'good'; judgeScore = 10; }
+
+        if (n.data.dur === 0) {
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            score += judgeScore + combo;
+            judgeCounts[judgeType]++;
+            n.element.remove();
+            activeNotes.splice(targetIdx, 1);
+            showJudgeEffect(laneIdx, judgeType);
+            showHitBurst(laneIdx);
+            playHitSound(judgeType);
+        } else {
+            n.isBeingHeld = true;
+            combo++;
+            if (combo > maxCombo) maxCombo = combo;
+            score += judgeScore;
+            judgeCounts[judgeType]++;
+            showJudgeEffect(laneIdx, judgeType);
+            showHitBurst(laneIdx);
+            playHitSound(judgeType);
+        }
+        updateDisplay();
+    }
+}
+
+function triggerMiss(laneIdx) {
+    combo = 0;
+    judgeCounts.miss++;
+    showJudgeEffect(laneIdx, 'miss');
+    playHitSound('miss');
+
+    const cm = document.createElement('div');
+    cm.className = 'center-miss';
+    cm.innerText = 'MISS';
+    document.getElementById('game-container').appendChild(cm);
+    setTimeout(() => cm.remove(), 600);
+
+    updateDisplay();
+}
+
+// ===================================================================
+//  이펙트
+// ===================================================================
+function showJudgeEffect(laneIdx, type) {
+    const lane = document.getElementById('lane-' + laneIdx);
+    const el = document.createElement('div');
+    el.className = 'judge-effect ' + type;
+    const labels = { perfect: 'PERFECT!', great: 'GREAT!', good: 'GOOD', miss: 'MISS' };
+    el.innerText = labels[type];
+    lane.appendChild(el);
+    setTimeout(() => el.remove(), 600);
+}
+
+function showHitBurst(laneIdx) {
+    const lane = document.getElementById('lane-' + laneIdx);
+    const el = document.createElement('div');
+    el.className = 'hit-burst lane-c' + laneIdx;
+    lane.appendChild(el);
+    setTimeout(() => el.remove(), 400);
+}
+
+function showComboMilestone(c) {
+    const el = document.createElement('div');
+    el.className = 'combo-milestone';
+    el.innerText = '🔥 ' + c + ' COMBO!';
+    document.getElementById('game-container').appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+}
+
+// ===================================================================
+//  화면 갱신
+// ===================================================================
+function updateDisplay() {
+    document.getElementById('score-text').innerText = score.toLocaleString();
+
+    const comboContainer = document.getElementById('combo-container');
+    const comboCountEl = document.getElementById('combo-count');
+
+    if (combo > 0) {
+        comboContainer.style.display = 'block';
+        comboCountEl.innerText = combo;
+        comboContainer.classList.remove('bump');
+        void comboContainer.offsetWidth;
+        comboContainer.classList.add('bump');
+
+        if (combo > 0 && combo % 50 === 0) {
+            showComboMilestone(combo);
+        }
+    } else {
+        comboContainer.style.display = 'none';
+    }
+}
+
+// ===================================================================
+//  게임 루프
+// ===================================================================
+function gameLoop() {
+    if (!gameStarted) return;
+    let currentTime = bgm.currentTime * 1000;
+    let hitZoneY = window.innerHeight * 0.88;
+
+    if (bgm.duration) {
+        document.getElementById('progress-bar').style.width = ((bgm.currentTime / bgm.duration) * 100) + '%';
+    }
+
+    while (noteIndex < currentNoteMap.length && currentTime >= currentNoteMap[noteIndex].time - fallDuration) {
+        spawnNote(currentNoteMap[noteIndex++]);
+    }
+
+    for (let i = activeNotes.length - 1; i >= 0; i--) {
+        let n = activeNotes[i];
+        let progress = (currentTime - (n.data.time - fallDuration)) / fallDuration;
+
+        if (n.isBeingHeld) {
+            if (!isLanePressed[n.data.lane] || currentTime > n.data.time + n.data.dur) {
+                let completed = currentTime >= n.data.time + n.data.dur - 100;
+                n.element.remove();
+                activeNotes.splice(i, 1);
+                if (!completed) {
+                    combo = 0;
+                    updateDisplay();
+                } else {
+                    score += 30;
+                    combo++;
+                    if (combo > maxCombo) maxCombo = combo;
+                    showJudgeEffect(n.data.lane, 'perfect');
+                    updateDisplay();
+                }
+            } else {
+                score += 1;
+                let remainH = Math.max(0, ((n.data.time + n.data.dur - currentTime) / fallDuration) * hitZoneY);
+                n.element.style.height = remainH + 'px';
+                n.element.style.top = (hitZoneY - remainH) + 'px';
+                updateDisplay();
+            }
+        } else {
+            let currentY = progress * hitZoneY;
+            if (n.data.dur === 0) {
+                n.element.style.top = currentY + 'px';
+            } else {
+                let noteH = (n.data.dur / fallDuration) * hitZoneY;
+                n.element.style.top = (currentY - noteH) + 'px';
+            }
+
+            if (currentTime > n.data.time + GOOD_RANGE) {
+                n.element.remove();
+                activeNotes.splice(i, 1);
+                triggerMiss(n.data.lane);
+            }
+        }
+    }
+
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+function spawnNote(data) {
+    const lane = document.getElementById('lane-' + data.lane);
+    const noteEl = document.createElement('div');
+    const colorClass = 'lane-c' + data.lane;
+
+    if (data.dur === 0) {
+        noteEl.className = 'note short ' + colorClass;
+    } else {
+        noteEl.className = 'note long ' + colorClass;
+        let h = (data.dur / fallDuration) * window.innerHeight * 0.88;
+        noteEl.style.height = h + 'px';
+    }
+
+    lane.appendChild(noteEl);
+    activeNotes.push({ element: noteEl, data: data, isBeingHeld: false });
+}
+
+// ===================================================================
+//  랭킹 (곡별 분리)
+// ===================================================================
+async function saveRank() {
+    const name = document.getElementById('user-name').value.trim() || "무명성도";
+    const btn = document.getElementById('save-btn');
+    const songId = songDatabase[selectedSongIndex].id;
+    btn.disabled = true;
+    btn.innerText = "등록 중...";
+
+    fetch(SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify({
+            name: name,
+            score: score,
+            song: songId
+        })
+    });
+
+    setTimeout(() => {
+        displayRanks();
+        btn.disabled = false;
+        btn.innerText = "🏆 랭킹 등록";
+    }, 2500);
+}
+
+async function displayRanks() {
+    const listDiv = document.getElementById('rank-list');
+    const songId = songDatabase[selectedSongIndex].id;
+    try {
+        const res = await fetch(SCRIPT_URL + '?song=' + encodeURIComponent(songId));
+        const ranks = await res.json();
+        if (ranks.length === 0) {
+            listDiv.innerHTML = '<h3>🏆 랭킹</h3><p style="color:#888; font-size:0.9rem;">아직 기록이 없습니다. 첫 번째 도전자가 되세요!</p>';
+            return;
+        }
+        listDiv.innerHTML = '<h3>🏆 ' + songDatabase[selectedSongIndex].title + ' TOP 10</h3>' +
+            ranks.map((r, i) => {
+                let cls = '';
+                if (i === 0) cls = 'rank-1';
+                else if (i === 1) cls = 'rank-2';
+                else if (i === 2) cls = 'rank-3';
+                return `<div class="rank-entry ${cls}"><span>${['🥇','🥈','🥉'][i] || (i+1)+'위'} ${r.name}</span><span>${r.score}점</span></div>`;
+            }).join('');
+    } catch (e) {
+        listDiv.innerHTML = '<p style="color:#888;">랭킹을 불러올 수 없습니다</p>';
+    }
+}
+
+function copyOutput() {
+    const textarea = document.getElementById('output-text');
+    textarea.select();
+    document.execCommand('copy');
+    alert('클립보드에 복사되었습니다!');
+}
+
+// ===================================================================
+//  페이지 초기화
+// ===================================================================
+window.onload = () => {
+    createParticles();
+    buildSongList();
+    checkAdminMode();
+    setupPointerEvents();
+};
+</script>
+</body>
+</html>
