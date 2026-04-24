@@ -161,6 +161,10 @@
         .note.lane-c2 { background: linear-gradient(135deg, #3366ff, #6699ff); box-shadow: 0 0 12px #3366ff, 0 2px 8px rgba(51,102,255,0.5); }
         .note.lane-c3 { background: linear-gradient(135deg, #ffcc00, #ffdd55); box-shadow: 0 0 12px #ffcc00, 0 2px 8px rgba(255,204,0,0.5); }
         .note.long { opacity: 0.85; border-radius: 8px; }
+        .note.hit-glow {
+            background: rgba(255,255,255,0.9) !important;
+            box-shadow: 0 0 20px #fff, 0 0 40px rgba(255,255,255,0.6) !important;
+        }
 
         .judge-effect {
             position: absolute;
@@ -1462,37 +1466,39 @@ function setupPointerEvents() {
     }
 }
 
-function handlePointerDown(laneIdx, e) {
-    e.preventDefault();
-    if (!gameStarted && !isRecording) return;
-    initAudio();
-    isLanePressed[laneIdx] = true;
-    document.getElementById('lane-' + laneIdx).classList.add('flash-' + laneIdx);
-    // 누르고 있는 레인의 노트를 하얗게
-    document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.add('hit-glow'));
+    function handlePointerDown(laneIdx, e) {
+        e.preventDefault();
+        if (!gameStarted && !isRecording) return;
+        initAudio();
+        isLanePressed[laneIdx] = true;
+        document.getElementById('lane-' + laneIdx).classList.add('flash-' + laneIdx);
+        // 누르는 동안 해당 레인의 노트를 밝게
+        document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.add('hit-glow'));
 
-
-    if (isRecording) {
-        recordingStartTimes[laneIdx] = Math.floor(bgm.currentTime * 1000);
-    } else {
-        checkHit(laneIdx);
+        if (isRecording) {
+            recordingStartTimes[laneIdx] = bgm.currentTime * 1000;
+        } else {
+            checkHit(laneIdx);
+        }
     }
-}
-
-function handlePointerUp(laneIdx, e) {
-    if (!gameStarted && !isRecording) return;
-    isLanePressed[laneIdx] = false;
-    document.getElementById('lane-' + laneIdx).classList.remove('flash-' + laneIdx);
-    // 노트 원래 색으로 복원
-    document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.remove('hit-glow'));
 
 
-    if (isRecording && recordingStartTimes[laneIdx] !== null) {
-        let dur = Math.floor(bgm.currentTime * 1000) - recordingStartTimes[laneIdx];
-        recordedNotes.push(`{ time: ${recordingStartTimes[laneIdx]}, lane: ${laneIdx}, dur: ${dur > 250 ? dur : 0} }`);
-        recordingStartTimes[laneIdx] = null;
+    function handlePointerUp(laneIdx, e) {
+        if (!gameStarted && !isRecording) return;
+        isLanePressed[laneIdx] = false;
+        document.getElementById('lane-' + laneIdx).classList.remove('flash-' + laneIdx);
+        // 노트 밝기 원래대로
+        document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.remove('hit-glow'));
+
+        if (isRecording && recordingStartTimes[laneIdx] !== null) {
+            const start = recordingStartTimes[laneIdx];
+            const end = bgm.currentTime * 1000;
+            const dur = Math.round(end - start);
+            recordedNotes.push({ time: Math.round(start), lane: laneIdx, dur: dur > 300 ? dur : 0 });
+            recordingStartTimes[laneIdx] = null;
+        }
     }
-}
+
 
 // ===================================================================
 //  카운트다운
