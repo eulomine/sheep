@@ -1565,8 +1565,8 @@ function endGame() {
 
     if (isRecording) {
         document.getElementById('record-output').style.display = 'flex';
-        document.getElementById('output-text').value =
-            `noteMap: [\n    ${recordedNotes.join(',\n    ')}\n]`;
+document.getElementById('output-text').value =
+    `noteMap: [\n    ${recordedNotes.map(n => JSON.stringify(n)).join(',\n    ')}\n]`;
     } else {
         document.getElementById('rank-screen').style.display = 'flex';
         document.getElementById('result-song-title').innerText = '🎵 ' + songDatabase[selectedSongIndex].title;
