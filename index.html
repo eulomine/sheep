@@ -1473,7 +1473,7 @@ function setupPointerEvents() {
         isLanePressed[laneIdx] = true;
         document.getElementById('lane-' + laneIdx).classList.add('flash-' + laneIdx);
         // 누르는 동안 해당 레인의 노트를 밝게
-        document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.add('hit-glow'));
+       
 
         if (isRecording) {
             recordingStartTimes[laneIdx] = bgm.currentTime * 1000;
@@ -1488,7 +1488,7 @@ function setupPointerEvents() {
         isLanePressed[laneIdx] = false;
         document.getElementById('lane-' + laneIdx).classList.remove('flash-' + laneIdx);
         // 노트 밝기 원래대로
-        document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.remove('hit-glow'));
+   
 
         if (isRecording && recordingStartTimes[laneIdx] !== null) {
             const start = recordingStartTimes[laneIdx];
@@ -1621,6 +1621,7 @@ function checkHit(laneIdx) {
             if (combo > maxCombo) maxCombo = combo;
             score += judgeScore + combo;
             judgeCounts[judgeType]++;
+            n.element.classList.add('hit-glow');
             n.element.remove();
             activeNotes.splice(targetIdx, 1);
             showJudgeEffect(laneIdx, judgeType);
@@ -1628,6 +1629,7 @@ function checkHit(laneIdx) {
             playHitSound(judgeType);
         } else {
             n.isBeingHeld = true;
+            n.element.classList.add('hit-glow');
             combo++;
             if (combo > maxCombo) maxCombo = combo;
             score += judgeScore;
