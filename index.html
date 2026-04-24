@@ -103,10 +103,11 @@
         #lane-2::before { background: linear-gradient(to top, #3366ff, transparent 60%); }
         #lane-3::before { background: linear-gradient(to top, #ffcc00, transparent 60%); }
 
-        .lane.flash-0 { background: rgba(255,51,102,0.35) !important; box-shadow: inset 0 0 60px rgba(255,51,102,0.4); }
-        .lane.flash-1 { background: rgba(51,255,102,0.35) !important; box-shadow: inset 0 0 60px rgba(51,255,102,0.4); }
-        .lane.flash-2 { background: rgba(51,102,255,0.35) !important; box-shadow: inset 0 0 60px rgba(51,102,255,0.4); }
-        .lane.flash-3 { background: rgba(255,204,0,0.35) !important; box-shadow: inset 0 0 60px rgba(255,204,0,0.4); }
+               .lane.flash-0 { background: radial-gradient(ellipse at bottom, rgba(255,51,102,0.3), transparent 70%); }
+        .lane.flash-1 { background: radial-gradient(ellipse at bottom, rgba(51,255,102,0.3), transparent 70%); }
+        .lane.flash-2 { background: radial-gradient(ellipse at bottom, rgba(51,102,255,0.3), transparent 70%); }
+        .lane.flash-3 { background: radial-gradient(ellipse at bottom, rgba(255,204,0,0.3), transparent 70%); }
+
 
         .hit-zone {
             position: absolute;
@@ -1467,6 +1468,9 @@ function handlePointerDown(laneIdx, e) {
     initAudio();
     isLanePressed[laneIdx] = true;
     document.getElementById('lane-' + laneIdx).classList.add('flash-' + laneIdx);
+    // 누르고 있는 레인의 노트를 하얗게
+    document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.add('hit-glow'));
+
 
     if (isRecording) {
         recordingStartTimes[laneIdx] = Math.floor(bgm.currentTime * 1000);
@@ -1479,6 +1483,9 @@ function handlePointerUp(laneIdx, e) {
     if (!gameStarted && !isRecording) return;
     isLanePressed[laneIdx] = false;
     document.getElementById('lane-' + laneIdx).classList.remove('flash-' + laneIdx);
+    // 노트 원래 색으로 복원
+    document.querySelectorAll('#lane-' + laneIdx + ' .note').forEach(n => n.classList.remove('hit-glow'));
+
 
     if (isRecording && recordingStartTimes[laneIdx] !== null) {
         let dur = Math.floor(bgm.currentTime * 1000) - recordingStartTimes[laneIdx];
