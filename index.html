@@ -1578,7 +1578,7 @@ document.getElementById('output-text').value =
         document.getElementById('stat-maxcombo').innerText = maxCombo;
 
         const total = currentNoteMap.length;
-        const ratio = total > 0 ? (judgeCounts.perfect + judgeCounts.great) / total : 0;
+        const ratio = total > 0 ? (judgeCounts.perfect + judgeCounts.great + judgeCounts.good) / total : 0;
         let grade = '⭐';
         if (judgeCounts.miss === 0 && ratio >= 0.95) grade = '👑 SSS';
         else if (ratio >= 0.9) grade = '🌟 SS';
